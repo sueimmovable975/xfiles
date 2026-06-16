@@ -501,25 +501,40 @@ func resolveRemote(cwd, arg string) string {
 
 // tokenize splits a command line on whitespace, honoring double quotes so file
 // names with spaces survive as single arguments.
+// tokenize splits a REPL line into arguments with shell-like quoting: spaces
+// separate tokens, double or single quotes group a token (single quotes are
+// literal), and a backslash escapes the next character except inside single
+// quotes. This lets folder names with spaces be given any of the usual ways:
+// "Phase 2", 'Phase 2', or Phase\ 2.
 func tokenize(s string) []string {
 	var args []string
 	var cur strings.Builder
-	inQuote := false
+	var quote byte // 0 = none, '"' or '\'' = inside that quote
+	started := false
 	flush := func() {
-		if cur.Len() > 0 {
+		if started {
 			args = append(args, cur.String())
 			cur.Reset()
+			started = false
 		}
 	}
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 		switch {
-		case c == '"':
-			inQuote = !inQuote
-		case (c == ' ' || c == '\t') && !inQuote:
+		case c == '\\' && quote != '\'' && i+1 < len(s):
+			i++
+			cur.WriteByte(s[i])
+			started = true
+		case quote == 0 && (c == '"' || c == '\''):
+			quote = c
+			started = true
+		case quote != 0 && c == quote:
+			quote = 0
+		case quote == 0 && (c == ' ' || c == '\t'):
 			flush()
 		default:
 			cur.WriteByte(c)
+			started = true
 		}
 	}
 	flush()

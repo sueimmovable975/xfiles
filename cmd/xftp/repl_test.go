@@ -39,6 +39,13 @@ func TestTokenize(t *testing.T) {
 		{`get "Q1 Plan.xlsx"`, []string{"get", "Q1 Plan.xlsx"}},
 		{`mv "a b" "c d"`, []string{"mv", "a b", "c d"}},
 		{`put report.txt "Shared Docs/report.txt"`, []string{"put", "report.txt", "Shared Docs/report.txt"}},
+		{`cd 'Phase 2'`, []string{"cd", "Phase 2"}},
+		{`cd Phase\ 2`, []string{"cd", "Phase 2"}},
+		{`cd "Phase 2"`, []string{"cd", "Phase 2"}},
+		{`mv 'a b' c\ d`, []string{"mv", "a b", "c d"}},
+		{`echo "a'b"`, []string{"echo", "a'b"}},
+		{`echo 'a"b'`, []string{"echo", `a"b`}},
+		{`cd ""`, []string{"cd", ""}},
 	}
 	for _, c := range cases {
 		got := tokenize(c.in)

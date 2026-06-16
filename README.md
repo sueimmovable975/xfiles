@@ -59,7 +59,7 @@ xftp:/Reports> get "Q1 Plan.xlsx"
 xftp:/Reports> put report.pdf Archive/report.pdf
 ```
 
-Paths may be relative to the current folder or absolute with a leading `/`, and `.`/`..` work as you'd expect. Names containing spaces are double-quoted.
+Paths may be relative to the current folder or absolute with a leading `/`, and `.`/`..` work as you'd expect. Names containing spaces can be quoted (`"Phase 2"` or `'Phase 2'`) or escaped (`Phase\ 2`), the same way you would in a shell.
 
 ## Commands
 
