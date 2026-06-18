@@ -36,7 +36,11 @@ type Drive struct {
 }
 
 // Item is one entry in a drive folder listing — the unit an FTP-style "ls"
-// prints and "cd" descends into.
+// prints and "cd" descends into. LastModified is the service-level modification
+// time (what "ls" shows); FSModified is the filesystem mtime from
+// fileSystemInfo — the writable timestamp OneDrive clients mirror, which xsync
+// uses for size+mtime comparisons. FSModified falls back to LastModified when a
+// drive item carries no fileSystemInfo.
 type Item struct {
 	Name         string
 	ID           string
@@ -44,6 +48,7 @@ type Item struct {
 	Size         int64
 	ChildCount   int
 	LastModified time.Time
+	FSModified   time.Time
 }
 
 // parseSiteURL splits a SharePoint URL into its hostname, server-relative site
@@ -342,7 +347,10 @@ type driveItemJSON struct {
 	Folder               *struct {
 		ChildCount int `json:"childCount"`
 	} `json:"folder"`
-	File *json.RawMessage `json:"file"`
+	File           *json.RawMessage `json:"file"`
+	FileSystemInfo *struct {
+		LastModifiedDateTime string `json:"lastModifiedDateTime"`
+	} `json:"fileSystemInfo"`
 }
 
 func (j driveItemJSON) toItem() Item {
@@ -354,6 +362,12 @@ func (j driveItemJSON) toItem() Item {
 	if t, err := time.Parse(time.RFC3339, j.LastModifiedDateTime); err == nil {
 		it.LastModified = t
 	}
+	it.FSModified = it.LastModified
+	if j.FileSystemInfo != nil {
+		if t, err := time.Parse(time.RFC3339, j.FileSystemInfo.LastModifiedDateTime); err == nil {
+			it.FSModified = t
+		}
+	}
 	return it
 }
 
@@ -362,7 +376,7 @@ func (j driveItemJSON) toItem() Item {
 func (d *Drive) List(ctx context.Context, g *spauth.GraphClient, path string) ([]Item, error) {
 	endpoint := fmt.Sprintf("/drives/%s%s/children", d.DriveID, itemRef(path))
 	raws, err := g.GetAll(ctx, endpoint, url.Values{
-		"$select": {"id,name,size,lastModifiedDateTime,folder,file"},
+		"$select": {"id,name,size,lastModifiedDateTime,folder,file,fileSystemInfo"},
 	})
 	if err != nil {
 		return nil, err
@@ -437,7 +451,7 @@ const uploadChunkSize = 10 * 1024 * 1024
 // "/" for the drive root). Used to validate "cd" targets and to size downloads.
 func (d *Drive) Stat(ctx context.Context, g *spauth.GraphClient, path string) (Item, error) {
 	body, err := g.Get(ctx, fmt.Sprintf("/drives/%s%s", d.DriveID, itemRef(path)), url.Values{
-		"$select": {"id,name,size,lastModifiedDateTime,folder,file"},
+		"$select": {"id,name,size,lastModifiedDateTime,folder,file,fileSystemInfo"},
 	})
 	if err != nil {
 		return Item{}, err
@@ -534,6 +548,23 @@ func (d *Drive) uploadSession(ctx context.Context, g *spauth.GraphClient, path s
 		return fmt.Errorf("upload incomplete: sent %d of %d bytes", sent, size)
 	}
 	return nil
+}
+
+// SetMTime writes the filesystem last-modified time of the item at the
+// library-relative path into its fileSystemInfo — the timestamp OneDrive clients
+// use to mirror local mtimes (unlike lastModifiedDateTime, which is
+// service-controlled and read-only). xsync stamps it after an upload so the
+// remote copy carries the source file's mtime, keeping later size+mtime
+// comparisons stable instead of re-uploading on every run. The time is sent at
+// whole-second precision in UTC, which Graph accepts unambiguously.
+func (d *Drive) SetMTime(ctx context.Context, g *spauth.GraphClient, path string, t time.Time) error {
+	body := map[string]interface{}{
+		"fileSystemInfo": map[string]string{
+			"lastModifiedDateTime": t.UTC().Format(time.RFC3339),
+		},
+	}
+	_, err := g.Patch(ctx, fmt.Sprintf("/drives/%s%s", d.DriveID, itemRef(path)), body)
+	return err
 }
 
 // Mkdir creates a folder at the library-relative path. (FTP "mkdir".) Fails if

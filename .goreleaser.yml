@@ -82,6 +82,24 @@ builds:
     ldflags:
       - -s -w
       - -X main.version={{.Version}}
+  - id: xsync
+    main: ./cmd/xsync
+    binary: xsync
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
 
 archives:
   - id: xftp
@@ -118,6 +136,16 @@ archives:
     ids:
       - xtree
     name_template: "xtree_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+    files:
+      - LICENSE
+      - README.md
+  - id: xsync
+    ids:
+      - xsync
+    name_template: "xsync_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         formats: ["zip"]
@@ -216,6 +244,29 @@ nfpms:
         dst: /usr/share/doc/xtree/copyright
       - src: ./README.md
         dst: /usr/share/doc/xtree/README.md
+  - id: xsync
+    ids:
+      - xsync
+    package_name: xsync
+    file_name_template: "{{ .ConventionalFileName }}"
+    maintainer: David M. Anderson <david.anderson@excelano.com>
+    description: |
+      xsync — the rsync of the xftp family for SharePoint libraries.
+      Recursively mirror a directory tree to or from a document library,
+      transferring only new or changed files (by size and mtime), with
+      --delete and --dry-run, over Microsoft Graph. Device-code auth.
+    homepage: https://github.com/excelano/xfiles
+    license: MIT
+    formats:
+      - deb
+    section: utils
+    priority: optional
+    bindir: /usr/bin
+    contents:
+      - src: ./LICENSE
+        dst: /usr/share/doc/xsync/copyright
+      - src: ./README.md
+        dst: /usr/share/doc/xsync/README.md
 
 checksum:
   name_template: "checksums.txt"

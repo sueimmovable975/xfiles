@@ -1,6 +1,6 @@
 #!/bin/sh
 # xftp installer — fetches the latest release binaries (xftp and its companions
-# xcp, xfind, and xtree) for the host platform and drops them into /usr/local/bin
+# xcp, xfind, xtree, and xsync) for the host platform and drops them into /usr/local/bin
 # (or ~/.local/bin if /usr/local/bin is not writable). POSIX sh, no bash extensions.
 #
 # Usage:
@@ -14,7 +14,7 @@ set -eu
 
 REPO="excelano/xfiles"
 # Binaries shipped from this repo, installed together so the set stays in lockstep.
-BINARIES="xftp xcp xfind xtree"
+BINARIES="xftp xcp xfind xtree xsync"
 
 say() { printf '%s\n' "$*" >&2; }
 err() { say "error: $*"; exit 1; }

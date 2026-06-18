@@ -1,5 +1,5 @@
 #!/bin/sh
-# xftp uninstaller — finds and removes the xftp, xcp, xfind, and xtree binaries,
+# xftp uninstaller — finds and removes the xftp, xcp, xfind, xtree, and xsync binaries,
 # with an optional follow-up step to remove their config dirs under ~/.config
 # (REPL history, cached tokens). POSIX sh, no bash extensions.
 #
@@ -10,13 +10,13 @@
 #   XFTP_UNINSTALL_YES=1  Skip the binary-removal confirmation (assume yes).
 #                        Does NOT imply purge: config dirs are kept
 #                        unless XFTP_PURGE=1 is also set.
-#   XFTP_PURGE=1          Also remove the ~/.config/{xftp,xcp,xfind,xtree}
+#   XFTP_PURGE=1          Also remove the ~/.config/{xftp,xcp,xfind,xtree,xsync}
 #                        config dirs (history, cached tokens), independent of
 #                        XFTP_UNINSTALL_YES.
 
 set -eu
 
-BINARIES="xftp xcp xfind xtree"
+BINARIES="xftp xcp xfind xtree xsync"
 
 say() { printf '%s\n' "$*" >&2; }
 err() { say "error: $*"; exit 1; }
@@ -103,7 +103,7 @@ for BIN in $BINARIES; do
 	fi
 done
 if [ "$ANY" = "0" ]; then
-	say "None of xftp, xcp, xfind, or xtree is on PATH; nothing to uninstall."
+	say "None of xftp, xcp, xfind, xtree, or xsync is on PATH; nothing to uninstall."
 	say "If you installed to a custom location, remove it manually."
 	exit 0
 fi
