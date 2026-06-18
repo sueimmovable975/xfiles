@@ -34,6 +34,9 @@ func TestClassify(t *testing.T) {
 		{"upload", local, url, upload, false},
 		{"both urls", url, url, 0, true},
 		{"neither url", local, "./copy.xlsx", 0, true},
+		{"cat to stdout", url, "-", download, false},
+		{"upload from stdin", "-", url, upload, false},
+		{"dash to dash", "-", "-", 0, true},
 	}
 	for _, c := range cases {
 		got, err := classify(c.src, c.dst)

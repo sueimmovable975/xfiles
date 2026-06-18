@@ -28,6 +28,41 @@ const progressThreshold = 50 * 1024 * 1024 // 50 MiB
 // files over progressThreshold. A remote folder is rejected. When the context
 // is cancelled (Ctrl-C), the returned error wraps ctx.Err().
 func Download(ctx context.Context, g *spauth.GraphClient, d *drive.Drive, remote, localPath string) error {
+	tmp, err := os.CreateTemp(filepath.Dir(localPath), "."+filepath.Base(localPath)+".part-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+
+	dlErr := downloadTo(ctx, g, d, remote, tmp, true)
+	if cerr := tmp.Close(); cerr != nil && dlErr == nil {
+		dlErr = cerr
+	}
+	if dlErr != nil {
+		os.Remove(tmpName)
+		return dlErr
+	}
+	if err := os.Rename(tmpName, localPath); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	return nil
+}
+
+// DownloadStream streams the remote file straight to w with no progress line and
+// no temp file, keeping the byte stream clean for piping (xcp's "-" destination,
+// i.e. cat to stdout). A remote folder is rejected; on ctx cancellation the
+// error wraps ctx.Err().
+func DownloadStream(ctx context.Context, g *spauth.GraphClient, d *drive.Drive, remote string, w io.Writer) error {
+	return downloadTo(ctx, g, d, remote, w, false)
+}
+
+// downloadTo is the shared download core: it Stats the remote (rejecting
+// folders), optionally wraps w with a progress line for large files, and streams
+// the content to w. allowProgress is false for stdout so progress can't appear
+// to be part of the piped data (it would go to stderr regardless, but a cat
+// should be silent).
+func downloadTo(ctx context.Context, g *spauth.GraphClient, d *drive.Drive, remote string, w io.Writer, allowProgress bool) error {
 	item, err := d.Stat(ctx, g, remote)
 	if err != nil {
 		return err
@@ -35,32 +70,14 @@ func Download(ctx context.Context, g *spauth.GraphClient, d *drive.Drive, remote
 	if item.IsFolder {
 		return fmt.Errorf("/%s is a folder", remote)
 	}
-
-	tmp, err := os.CreateTemp(filepath.Dir(localPath), "."+filepath.Base(localPath)+".part-*")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-
-	var w io.Writer = tmp
-	if item.Size > progressThreshold {
-		w = &progressWriter{w: tmp, total: item.Size, label: path.Base(remote)}
+	if allowProgress && item.Size > progressThreshold {
+		w = &progressWriter{w: w, total: item.Size, label: path.Base(remote)}
 		defer fmt.Fprintln(os.Stderr)
 	}
-
-	dlErr := d.Download(ctx, g, remote, w)
-	if cerr := tmp.Close(); cerr != nil && dlErr == nil {
-		dlErr = cerr
-	}
-	if dlErr != nil {
-		os.Remove(tmpName)
+	if err := d.Download(ctx, g, remote, w); err != nil {
 		if ctx.Err() != nil {
 			return fmt.Errorf("interrupted: %w", ctx.Err())
 		}
-		return dlErr
-	}
-	if err := os.Rename(tmpName, localPath); err != nil {
-		os.Remove(tmpName)
 		return err
 	}
 	return nil

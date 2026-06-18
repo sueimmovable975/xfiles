@@ -106,6 +106,13 @@ xcp "https://contoso.sharepoint.com/sites/Marketing/Shared Documents/Reports/Q1 
 
 The destination follows `cp`/`scp` habits. On upload, a URL that points at a folder copies the file into it under its own name, a URL that points at an existing file overwrites it, and any other path is taken as the new name. On download, a destination that is an existing directory receives the file under its remote name, and otherwise the destination is the path to write. The `--library` flag works as it does in xftp, and the same copy-link URLs are understood, so you can paste straight from SharePoint's "Copy link" button — but wrap that URL in single quotes, because a copy link carries `?` and `&` characters and the shell will otherwise split the command on the `&` before xcp sees it.
 
+Use `-` as the local side to stream instead of naming a file. A `-` destination cats the remote file to stdout, which keeps the byte stream clean for piping; a `-` source uploads from stdin, in which case the URL must name the target file since stdin has no name of its own:
+
+```
+xcp "https://contoso.sharepoint.com/sites/Marketing/Shared Documents/Reports/Q1.xlsx" - | in2csv | head
+generate-report | xcp - "https://contoso.sharepoint.com/sites/Marketing/Shared Documents/Reports/report.csv"
+```
+
 xcp authenticates exactly like xftp and through the same app registration, but it keeps its own token cache under `~/.config/xcp`, so the first run signs in once of its own. Recursive directory copies (`-r`) aren't supported yet; xcp moves one file per invocation.
 
 ## Authentication and tenants
