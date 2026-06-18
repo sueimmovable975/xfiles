@@ -127,6 +127,14 @@ func run() int {
 	args := fs.Args()
 	if len(args) != 2 {
 		fmt.Fprintln(os.Stderr, "Error: exactly two arguments are required (a source and a destination)")
+		// One URL-shaped argument is the fingerprint of an unquoted "Copy link":
+		// its & characters made the shell split the command, so the destination
+		// (and the rest of the URL) never reached xcp.
+		if len(args) == 1 && isURL(args[0]) {
+			fmt.Fprintln(os.Stderr, "\nHint: a SharePoint \"Copy link\" URL contains ? and & characters that the")
+			fmt.Fprintln(os.Stderr, "shell acts on unless the whole URL is wrapped in single quotes:")
+			fmt.Fprintln(os.Stderr, "  xcp 'https://…/file.xlsx?d=…&csf=1&web=1' file.xlsx")
+		}
 		fs.Usage()
 		return 2
 	}

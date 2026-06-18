@@ -49,6 +49,8 @@ xftp https://contoso.sharepoint.com/sites/Marketing
 xftp https://contoso.sharepoint.com/sites/Marketing/Shared%20Documents/Reports
 ```
 
+Wrap the URL in single quotes if it contains `?` or `&`, which the "Copy link" button's URLs always do — otherwise the shell splits the command on the `&` before xftp ever sees it. A plain site or folder URL like the ones above needs no quoting.
+
 xftp works out which library to bind from the URL. A bare site URL binds the site's default document library. A URL that points into a specific library binds that one, and if it points at a folder within the library, xftp drops you straight into that folder. To force a particular library regardless of the URL, name it by its display name:
 
 ```
@@ -102,7 +104,7 @@ Download a file from a library to the current directory:
 xcp "https://contoso.sharepoint.com/sites/Marketing/Shared Documents/Reports/Q1 Plan.xlsx" ./
 ```
 
-The destination follows `cp`/`scp` habits. On upload, a URL that points at a folder copies the file into it under its own name, a URL that points at an existing file overwrites it, and any other path is taken as the new name. On download, a destination that is an existing directory receives the file under its remote name, and otherwise the destination is the path to write. The `--library` flag works as it does in xftp, and the same copy-link URLs are understood, so you can paste straight from SharePoint's "Copy link" button.
+The destination follows `cp`/`scp` habits. On upload, a URL that points at a folder copies the file into it under its own name, a URL that points at an existing file overwrites it, and any other path is taken as the new name. On download, a destination that is an existing directory receives the file under its remote name, and otherwise the destination is the path to write. The `--library` flag works as it does in xftp, and the same copy-link URLs are understood, so you can paste straight from SharePoint's "Copy link" button — but wrap that URL in single quotes, because a copy link carries `?` and `&` characters and the shell will otherwise split the command on the `&` before xcp sees it.
 
 xcp authenticates exactly like xftp and through the same app registration, but it keeps its own token cache under `~/.config/xcp`, so the first run signs in once of its own. Recursive directory copies (`-r`) aren't supported yet; xcp moves one file per invocation.
 
